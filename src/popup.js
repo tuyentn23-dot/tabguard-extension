@@ -98,7 +98,7 @@ async function refresh() {
 async function initExtPay() {
   try {
     if (typeof ExtPay !== 'undefined') {
-      extpay = ExtPay('tabguard'); // REPLACE with your ExtensionPay extension ID
+      extpay = ExtPay('tnt-tabguard'); // REPLACE with your ExtensionPay extension ID
       await extpay.startBackground();
       isPro = await extpay.getUser().then(function (u) { return u.paid; }).catch(function () { return false; });
 
