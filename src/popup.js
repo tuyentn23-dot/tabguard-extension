@@ -3,15 +3,10 @@
 
 const listEl = document.getElementById('list');
 const planBadge = document.getElementById('plan-badge');
-const proBanner = document.getElementById('pro-banner');
 const btnSave = document.getElementById('btn-save');
 const btnExportAll = document.getElementById('btn-export-all');
-const btnUpgrade = document.getElementById('btn-upgrade');
 const toastEl = document.getElementById('toast');
 
-const FREE_SESSION_LIMIT = 50;
-let extpay = null;
-let isPro = false;
 
 function showToast(msg, isError) {
   toastEl.textContent = msg;
@@ -80,13 +75,8 @@ async function refresh() {
   }
   const sessions = (resp.sessions || []).sort(function (a, b) { return b.savedAt - a.savedAt; });
 
-  if (sessions.length >= FREE_SESSION_LIMIT && !isPro) {
-    planBadge.textContent = sessions.length + '/' + FREE_SESSION_LIMIT;
-    planBadge.classList.remove('pro');
-  } else {
-    planBadge.textContent = isPro ? 'Pro' : sessions.length + ' sessions';
-    planBadge.classList.toggle('pro', isPro);
-  }
+  planBadge.textContent = sessions.length + ' sessions';
+  planBadge.classList.remove('pro');
 
   if (sessions.length === 0) {
     listEl.innerHTML = '<div class="empty">No sessions yet. Click "Save current tabs" to start.</div>';
@@ -95,37 +85,11 @@ async function refresh() {
   listEl.innerHTML = sessions.map(renderSession).join('');
 }
 
-async function initExtPay() {
-  try {
-    if (typeof ExtPay !== 'undefined') {
-      extpay = ExtPay('tnt-tabguard'); // REPLACE with your ExtensionPay extension ID
-      await extpay.startBackground();
-      isPro = await extpay.getUser().then(function (u) { return u.paid; }).catch(function () { return false; });
-
-      if (isPro) {
-        proBanner.classList.add('hidden');
-        planBadge.classList.add('pro');
-        planBadge.textContent = 'Pro';
-      }
-    }
-  } catch (e) {
-    console.log('ExtPay init error:', e);
-  }
-}
-
 btnSave.addEventListener('click', async function () {
   btnSave.disabled = true;
   btnSave.textContent = 'Saving...';
 
   const listResp = await sendMsg({ action: 'list' });
-  const count = (listResp.sessions || []).length;
-  if (count >= FREE_SESSION_LIMIT && !isPro) {
-    btnSave.disabled = false;
-    btnSave.textContent = 'Save current tabs';
-    showToast('Free limit reached (' + FREE_SESSION_LIMIT + '). Upgrade for unlimited.', true);
-    return;
-  }
-
   const label = prompt('Session name (optional):') || '';
   const resp = await sendMsg({ action: 'save', label });
   btnSave.disabled = false;
@@ -136,14 +100,6 @@ btnSave.addEventListener('click', async function () {
     setTimeout(refresh, 900);
   } else {
     showToast('Save failed: ' + (resp.error || 'unknown'), true);
-  }
-});
-
-btnUpgrade.addEventListener('click', function () {
-  if (extpay) {
-    extpay.openPaymentPage();
-  } else {
-    showToast('Payment not initialized. Check ExtPay config.', true);
   }
 });
 
@@ -184,8 +140,12 @@ listEl.addEventListener('click', async function (e) {
       if (r.ok) {
         showToast('Opened ' + r.opened + '/' + r.total + ' tabs');
         setTimeout(function () { window.close(); }, 800);
+      } else if (r.error === 'checksum_mismatch') {
+        showToast('Data corrupted: checksum mismatch - not restoring', true);
+      } else if (r.error === 'not_found') {
+        showToast('Session not found', true);
       } else {
-        showToast('Restore failed', true);
+        showToast('Restore failed: ' + (r.error || 'unknown'), true);
       }
     } else if (action === 'export') {
       const r = await sendMsg({ action: 'export', id });
@@ -216,5 +176,5 @@ listEl.addEventListener('click', async function (e) {
   }
 });
 
-initExtPay().then(refresh);
+refresh();
 setInterval(refresh, 3000);

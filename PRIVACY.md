@@ -1,57 +1,60 @@
 # TabGuard Privacy Policy
 
-Last updated: 2026-10-21
+Last updated: 2026-10-21 (v0.2.2)
 
 ## Summary
 
-TabGuard does not collect, transmit, or sell any user data. All tab data stays on your device.
+TabGuard stores your tab sessions locally on your device. It does not contact any server, collect any analytics, or transmit any data outside your browser. There are no accounts, no payments, and no third-party services.
 
-## What TabGuard stores
+## What TabGuard stores locally
 
-All data stored locally in IndexedDB (tabguard_db):
-- Tab URLs, titles, pinned status, window index (only for sessions YOU save)
+All session data is stored in IndexedDB (tabguard_db) on your device:
+- Tab URLs, titles, pinned status, window index (only for sessions YOU explicitly save)
 - Session labels you type
-- SHA-256 checksum for verification
-- Timestamps
+- A SHA-256 checksum used to verify integrity on restore
+- Timestamps and your local preferences
+- Auto-backup snapshots (every 30 minutes while Chrome is open, capped to prevent unbounded growth)
 
-No data leaves your device. There is no server, no cloud sync, no account.
+This local data never leaves your device.
 
 ## What TabGuard does NOT do
 
-- No network requests (except: none — zero fetches)
-- No analytics, telemetry, or crash reports
+- No network requests of any kind (zero fetches)
+- No analytics, telemetry, or crash reporting
+- No advertising or ad networks
+- No reading of page content (only tab metadata: URL, title, pinned flag)
+- No selling or sharing of any data
+- No account system, no login
 - No cookies
-- No reading of page content (only tab metadata: url, title, pinned)
+- No payments or payment processors
 - No third-party services
-- No advertising
-- No account or login
 
 ## Permissions explained
 
-| Permission | Why |
+| Permission | Why it is used |
 |---|---|
-| tabs | Read tab URL/title to save sessions you request |
-| storage | Save preferences |
-| unlimitedStorage | IndexedDB quota for many sessions |
-| sessions | Reserved for future restore-closed-tabs feature |
-| alarms | Schedule auto-backup every 30 min |
-| host_permissions: [] | Empty — no site access |
+| tabs | Read tab URL/title to save the sessions you request, and restore them |
+| storage | Save your preferences and session data |
+| unlimitedStorage | IndexedDB quota for many saved sessions |
+| alarms | Schedule the 30-minute auto-backup |
+
+`host_permissions` is empty: TabGuard does not access any website.
 
 ## Data deletion
 
-You can delete any session from the popup (Delete button) or clear all data by:
-1. Uninstalling TabGuard, or
-2. Chrome > Settings > Privacy > Clear browsing data > IndexedDB for chrome-extension
+- Delete any individual session from the popup (Delete button).
+- Remove all local data by uninstalling TabGuard, or via Chrome > Settings > Privacy > Clear browsing data > IndexedDB for chrome-extension.
 
 ## Children's privacy
 
-TabGuard is not directed at children under 13. No data is collected.
+TabGuard is not directed at children under 13. No personal data is collected.
 
 ## Changes
 
-If this policy changes, the updated version will be included with the extension release and posted at the project GitHub.
+If this policy changes materially, the updated version will ship with the extension release and be posted at the same URL.
 
 ## Contact
 
-tuyentn23@gmail.com
-GitHub: https://github.com/tuyentn23-dot/tabguard-landing
+Email: tuyentn23@gmail.com
+Source: https://github.com/tuyentn23-dot/tabguard-extension
+Landing: https://tuyentn23-dot.github.io/tabguard-landing/

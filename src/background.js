@@ -4,6 +4,7 @@
 const DB_NAME = 'tabguard_db';
 const STORE_NAME = 'sessions';
 const BACKUP_INTERVAL_MIN = 30;
+const MAX_AUTO_BACKUPS = 20;
 const VERIFY_DELAY_MS = 800;
 
 function openDB() {
@@ -144,10 +145,34 @@ async function previewRestore(sessionId) {
   };
 }
 
+async function verifySessionIntegrity(session) {
+  if (!session || !session.checksum) {
+    return { ok: false, reason: 'no_checksum' };
+  }
+  const urls = session.tabs.map(function (t) { return t.url; });
+  const actual = await sha256(JSON.stringify(urls));
+  return {
+    ok: actual === session.checksum,
+    expected: session.checksum,
+    actual: actual,
+  };
+}
+
 async function restoreSession(sessionId) {
   const all = await dbGetAll();
   const s = all.find((x) => x.id === sessionId);
   if (!s) return { ok: false, error: 'not_found' };
+
+  const integrity = await verifySessionIntegrity(s);
+  if (!integrity.ok) {
+    return {
+      ok: false,
+      error: 'checksum_mismatch',
+      reason: integrity.reason || 'data_corrupted',
+      expected: integrity.expected,
+      actual: integrity.actual,
+    };
+  }
 
   const win = await chrome.windows.getCurrent();
   const opened = [];
@@ -178,8 +203,23 @@ async function exportSession(sessionId) {
   };
 }
 
+async function pruneAutoBackups() {
+  const all = await dbGetAll();
+  const autos = all.filter(function (s) {
+    return typeof s.label === 'string' && s.label.indexOf('Auto-backup') === 0;
+  });
+  autos.sort(function (a, b) {
+    return (b.savedAt || 0) - (a.savedAt || 0);
+  });
+  const toDelete = autos.slice(MAX_AUTO_BACKUPS);
+  for (const it of toDelete) {
+    await dbDelete(it.id);
+  }
+}
+
 async function autoBackup() {
   const r = await saveSession('Auto-backup ' + new Date().toLocaleString());
+  await pruneAutoBackups();
   return r;
 }
 
